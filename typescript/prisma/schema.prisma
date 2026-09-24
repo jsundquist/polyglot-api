@@ -1,0 +1,109 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model comments {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  issue_id   String   @db.Uuid
+  author_id  String   @db.Uuid
+  body       String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+  users      users    @relation(fields: [author_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  issues     issues   @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([issue_id], map: "idx_comments_issue_id")
+}
+
+model issue_assignees {
+  issue_id String @db.Uuid
+  user_id  String @db.Uuid
+  issues   issues @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  users    users  @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@id([issue_id, user_id])
+}
+
+model issue_labels {
+  issue_id String @db.Uuid
+  label_id String @db.Uuid
+  issues   issues @relation(fields: [issue_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  labels   labels @relation(fields: [label_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([issue_id, label_id])
+}
+
+model issues {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id      String            @db.Uuid
+  title           String
+  description     String?
+  status          issue_status      @default(open)
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  comments        comments[]
+  issue_assignees issue_assignees[]
+  issue_labels    issue_labels[]
+  projects        projects          @relation(fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_issues_project_id")
+  @@index([status], map: "idx_issues_status")
+}
+
+model labels {
+  id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String         @unique
+  color        String
+  issue_labels issue_labels[]
+}
+
+model projects {
+  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                  String
+  key                   String                  @unique
+  description           String?
+  status                project_status          @default(active)
+  created_at            DateTime                @default(now()) @db.Timestamptz(6)
+  updated_at            DateTime                @default(now()) @db.Timestamptz(6)
+  issues                issues[]
+  webhook_subscriptions webhook_subscriptions[]
+}
+
+model schema_migrations {
+  version String @id @db.VarChar
+}
+
+model users {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  comments        comments[]
+  issue_assignees issue_assignees[]
+}
+
+model webhook_subscriptions {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_id String   @db.Uuid
+  url        String
+  events     String[]
+  secret     String
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  projects   projects @relation(fields: [project_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([project_id], map: "idx_webhook_subscriptions_project_id")
+}
+
+enum issue_status {
+  open
+  in_progress @map("in-progress")
+  closed
+}
+
+enum project_status {
+  active
+  archived
+}
