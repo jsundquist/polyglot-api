@@ -1,0 +1,892 @@
+openapi: 3.2.0
+info:
+  title: Issue Tracking
+  summary: An issue tracking api example
+  description: >
+    This is an example of what an issue tracking api could look like.
+    It exists as a shared source-of-truth contract implemented in multiple
+    languages (C#, TypeScript, Python, Go, Rust) for comparison purposes.
+  contact:
+    name: API Support
+    url: https://digital-portfolio.net
+    email: me@digital-portfolio.net
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  version: 0.1.0
+
+servers:
+  - url: http://localhost:8080/v1
+    description: Local development
+
+security:
+  - ApiKeyAuth: []
+
+tags:
+  - name: projects
+    description: Top-level containers that group issues
+  - name: issues
+    description: Trackable units of work within a project
+  - name: labels
+    description: Tags applied to issues for categorization
+  - name: comments
+    description: Discussion threads attached to issues
+  - name: webhooks
+    description: Outbound event subscriptions for issue state changes
+
+paths:
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List all projects
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        "200":
+          description: A page of projects
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Project'
+              examples:
+                default:
+                  value:
+                    items:
+                      - id: "proj_01H9X8ZK3M"
+                        name: "Polyglot API"
+                        key: "PAPI"
+                        description: "Issue tracker used to compare language stacks"
+                        status: active
+                        created_at: "2026-01-15T10:00:00Z"
+                        updated_at: "2026-01-15T10:00:00Z"
+                    pagination:
+                      next_cursor: null
+                      limit: 20
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+            example:
+              name: "Polyglot API"
+              key: "PAPI"
+              description: "Issue tracker used to compare language stacks"
+      responses:
+        "201":
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /projects/{projectId}:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      operationId: getProject
+      tags: [projects]
+      summary: Get a project by id
+      responses:
+        "200":
+          description: The project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateProject
+      tags: [projects]
+      summary: Update a project, including archiving it
+      description: >
+        Projects are never hard-deleted so historical references (past
+        issues, reporting) stay intact. Setting status: archived is the
+        terminal state; archived projects cannot be un-archived or
+        archived again, which returns 409 Conflict.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+            example:
+              status: archived
+      responses:
+        "200":
+          description: The updated project
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /projects/{projectId}/issues:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      operationId: listIssuesForProject
+      tags: [issues]
+      summary: List issues in a project
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/IssueStatus'
+        - name: label
+          in: query
+          description: Filter by label name
+          schema:
+            type: string
+        - name: assignee
+          in: query
+          description: Filter by assignee user id
+          schema:
+            type: string
+      responses:
+        "200":
+          description: A page of issues
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Issue'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createIssue
+      tags: [issues]
+      summary: Create an issue in a project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueCreate'
+            example:
+              title: "Webhook retries do not honor backoff"
+              description: "Retries fire immediately instead of backing off."
+              label_ids: ["lbl_bug"]
+              assignee_ids: []
+      responses:
+        "201":
+          description: Issue created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /issues/{issueId}:
+    parameters:
+      - $ref: '#/components/parameters/IssueId'
+    get:
+      operationId: getIssue
+      tags: [issues]
+      summary: Get an issue by id
+      responses:
+        "200":
+          description: The issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+              example:
+                id: "iss_01H9XA1B2C"
+                project_id: "proj_01H9X8ZK3M"
+                title: "Webhook retries do not honor backoff"
+                description: "Retries fire immediately instead of backing off."
+                status: open
+                label_ids: ["lbl_bug"]
+                assignee_ids: []
+                created_at: "2026-01-16T09:00:00Z"
+                updated_at: "2026-01-16T09:00:00Z"
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    patch:
+      operationId: updateIssue
+      tags: [issues]
+      summary: Update an issue, including status transitions
+      description: >
+        Status may only move forward along open -> in-progress -> closed,
+        or be reopened from closed back to open. Any other transition
+        returns 409 Conflict.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueUpdate'
+            example:
+              status: in-progress
+      responses:
+        "200":
+          description: The updated issue
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Issue'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "409":
+          $ref: '#/components/responses/Conflict'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /issues/{issueId}/comments:
+    parameters:
+      - $ref: '#/components/parameters/IssueId'
+    get:
+      operationId: listComments
+      tags: [comments]
+      summary: List comments on an issue
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        "200":
+          description: A page of comments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Comment'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createComment
+      tags: [comments]
+      summary: Add a comment to an issue
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentCreate'
+            example:
+              body: "Repro'd on Postgres 15, filing a fix."
+      responses:
+        "201":
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /comments/{commentId}:
+    parameters:
+      - $ref: '#/components/parameters/CommentId'
+    patch:
+      operationId: updateComment
+      tags: [comments]
+      summary: Edit a comment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentUpdate'
+      responses:
+        "200":
+          description: The updated comment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      operationId: deleteComment
+      tags: [comments]
+      summary: Delete a comment
+      responses:
+        "204":
+          description: Comment deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /labels:
+    get:
+      operationId: listLabels
+      tags: [labels]
+      summary: List all labels
+      parameters:
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        "200":
+          description: A page of labels
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/PaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Label'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      operationId: createLabel
+      tags: [labels]
+      summary: Create a label
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabelCreate'
+            example:
+              name: "bug"
+              color: "#d73a4a"
+      responses:
+        "201":
+          description: Label created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Label'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /labels/{labelId}:
+    parameters:
+      - $ref: '#/components/parameters/LabelId'
+    delete:
+      operationId: deleteLabel
+      tags: [labels]
+      summary: Delete a label
+      responses:
+        "204":
+          description: Label deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /issues/{issueId}/assignees/{userId}:
+    parameters:
+      - $ref: '#/components/parameters/IssueId'
+      - name: userId
+        in: path
+        required: true
+        schema:
+          type: string
+    put:
+      operationId: assignUserToIssue
+      tags: [issues]
+      summary: Assign a user to an issue (idempotent)
+      responses:
+        "204":
+          description: User assigned
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: unassignUserFromIssue
+      tags: [issues]
+      summary: Remove a user's assignment from an issue
+      responses:
+        "204":
+          description: Assignment removed
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+  /projects/{projectId}/webhooks:
+    parameters:
+      - $ref: '#/components/parameters/ProjectId'
+    get:
+      operationId: listWebhooks
+      tags: [webhooks]
+      summary: List webhook subscriptions for a project
+      responses:
+        "200":
+          description: A list of webhook subscriptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WebhookSubscription'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: createWebhook
+      tags: [webhooks]
+      summary: Create a webhook subscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookSubscriptionCreate'
+            example:
+              url: "https://example.com/hooks/issue-events"
+              events: ["issue.created", "issue.status_changed"]
+              secret: "whsec_..."
+      responses:
+        "201":
+          description: Webhook subscription created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscription'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+        "422":
+          $ref: '#/components/responses/ValidationError'
+
+  /webhooks/{webhookId}:
+    parameters:
+      - $ref: '#/components/parameters/WebhookId'
+    get:
+      operationId: getWebhook
+      tags: [webhooks]
+      summary: Get a webhook subscription
+      responses:
+        "200":
+          description: The webhook subscription
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebhookSubscription'
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+    delete:
+      operationId: deleteWebhook
+      tags: [webhooks]
+      summary: Delete a webhook subscription
+      responses:
+        "204":
+          description: Webhook subscription deleted
+        "401":
+          $ref: '#/components/responses/Unauthorized'
+        "404":
+          $ref: '#/components/responses/NotFound'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: >
+        Static API key issued out-of-band. Sent as X-API-Key, or as a
+        Bearer token in the Authorization header — implementations may
+        support either.
+
+  parameters:
+    ProjectId:
+      name: projectId
+      in: path
+      required: true
+      schema:
+        type: string
+    IssueId:
+      name: issueId
+      in: path
+      required: true
+      schema:
+        type: string
+    CommentId:
+      name: commentId
+      in: path
+      required: true
+      schema:
+        type: string
+    LabelId:
+      name: labelId
+      in: path
+      required: true
+      schema:
+        type: string
+    WebhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema:
+        type: string
+    Cursor:
+      name: cursor
+      in: query
+      description: Opaque pagination cursor returned by a previous page
+      schema:
+        type: string
+    Limit:
+      name: limit
+      in: query
+      description: Max items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid API key
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Request conflicts with current resource state (e.g. invalid status transition)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Request failed validation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  schemas:
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code:
+          type: string
+          example: "validation_error"
+        message:
+          type: string
+          example: "title is required"
+        details:
+          type: object
+          additionalProperties: true
+
+    Pagination:
+      type: object
+      required: [limit]
+      properties:
+        next_cursor:
+          type: [string, 'null']
+        limit:
+          type: integer
+
+    PaginatedResponse:
+      type: object
+      required: [items, pagination]
+      properties:
+        items:
+          type: array
+          items: {}
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    IssueStatus:
+      type: string
+      enum: [open, in-progress, closed]
+
+    ProjectStatus:
+      type: string
+      description: >
+        active is the only creatable state; archived is terminal and
+        reached only via PATCH — there is no un-archiving.
+      enum: [active, archived]
+
+    Project:
+      type: object
+      required: [id, name, key, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        key:
+          type: string
+          description: Short unique project key, e.g. "PAPI"
+        description:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProjectCreate:
+      type: object
+      required: [name, key]
+      properties:
+        name:
+          type: string
+        key:
+          type: string
+        description:
+          type: [string, 'null']
+
+    ProjectUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/ProjectStatus'
+
+    Issue:
+      type: object
+      required: [id, project_id, title, status, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        label_ids:
+          type: array
+          items:
+            type: string
+        assignee_ids:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    IssueCreate:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        label_ids:
+          type: array
+          items:
+            type: string
+        assignee_ids:
+          type: array
+          items:
+            type: string
+
+    IssueUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: [string, 'null']
+        status:
+          $ref: '#/components/schemas/IssueStatus'
+        label_ids:
+          type: array
+          items:
+            type: string
+
+    Comment:
+      type: object
+      required: [id, issue_id, author_id, body, created_at, updated_at]
+      properties:
+        id:
+          type: string
+        issue_id:
+          type: string
+        author_id:
+          type: string
+        body:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    CommentCreate:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+    CommentUpdate:
+      type: object
+      required: [body]
+      properties:
+        body:
+          type: string
+
+    Label:
+      type: object
+      required: [id, name, color]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        color:
+          type: string
+          description: Hex color, e.g. "#d73a4a"
+
+    LabelCreate:
+      type: object
+      required: [name, color]
+      properties:
+        name:
+          type: string
+        color:
+          type: string
+
+    WebhookEvent:
+      type: string
+      enum: [issue.created, issue.updated, issue.status_changed]
+
+    WebhookSubscription:
+      type: object
+      required: [id, project_id, url, events, created_at]
+      properties:
+        id:
+          type: string
+        project_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookEvent'
+        created_at:
+          type: string
+          format: date-time
+
+    WebhookSubscriptionCreate:
+      type: object
+      required: [url, events]
+      properties:
+        url:
+          type: string
+          format: uri
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/WebhookEvent'
+        secret:
+          type: string
+          description: Shared secret used to sign delivery payloads (HMAC), write-only
+
+    WebhookDelivery:
+      type: object
+      description: >
+        Shape of the payload POSTed to a subscription's url on a matching
+        event. Delivery itself is runtime behavior (with retry/backoff),
+        not a spec'd endpoint.
+      required: [id, event, issue_id, occurred_at]
+      properties:
+        id:
+          type: string
+        event:
+          $ref: '#/components/schemas/WebhookEvent'
+        issue_id:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        attempt:
+          type: integer
+          description: 1-indexed delivery attempt number
