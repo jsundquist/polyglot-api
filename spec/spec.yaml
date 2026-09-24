@@ -1,4 +1,4 @@
-openapi: 3.2.0
+openapi: 3.1.0
 info:
   title: Issue Tracking
   summary: An issue tracking api example
@@ -34,12 +34,33 @@ tags:
   - name: webhooks
     description: Outbound event subscriptions for issue state changes
 
+webhooks:
+  issueEvent:
+    post:
+      operationId: issueEventDelivery
+      tags: [webhooks]
+      summary: Issue event delivery
+      description: >
+        Payload POSTed to a subscription's url when a subscribed event
+        occurs. Delivery is signed with the subscription's secret and
+        retried with backoff on non-2xx responses.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WebhookDelivery'
+      responses:
+        "200":
+          description: Receiver acknowledged the delivery
+
 paths:
   /projects:
     get:
       operationId: listProjects
       tags: [projects]
       summary: List all projects
+      description: Returns projects in creation order, newest first.
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -77,6 +98,7 @@ paths:
       operationId: createProject
       tags: [projects]
       summary: Create a project
+      description: Project keys must be unique across the workspace.
       requestBody:
         required: true
         content:
@@ -106,6 +128,7 @@ paths:
       operationId: getProject
       tags: [projects]
       summary: Get a project by id
+      description: Returns the project regardless of its status, including archived projects.
       responses:
         "200":
           description: The project
@@ -157,6 +180,7 @@ paths:
       operationId: listIssuesForProject
       tags: [issues]
       summary: List issues in a project
+      description: Supports filtering by status, label, and assignee; results are paginated.
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -196,6 +220,7 @@ paths:
       operationId: createIssue
       tags: [issues]
       summary: Create an issue in a project
+      description: New issues always start in the open status.
       requestBody:
         required: true
         content:
@@ -228,6 +253,7 @@ paths:
       operationId: getIssue
       tags: [issues]
       summary: Get an issue by id
+      description: Returns the issue regardless of its status, including closed issues.
       responses:
         "200":
           description: The issue
@@ -288,6 +314,7 @@ paths:
       operationId: listComments
       tags: [comments]
       summary: List comments on an issue
+      description: Returns comments in the order they were posted, oldest first.
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -313,6 +340,7 @@ paths:
       operationId: createComment
       tags: [comments]
       summary: Add a comment to an issue
+      description: The comment author is inferred from the authenticated API key.
       requestBody:
         required: true
         content:
@@ -342,6 +370,7 @@ paths:
       operationId: updateComment
       tags: [comments]
       summary: Edit a comment
+      description: Only the comment's author may edit it.
       requestBody:
         required: true
         content:
@@ -365,6 +394,7 @@ paths:
       operationId: deleteComment
       tags: [comments]
       summary: Delete a comment
+      description: Only the comment's author may delete it.
       responses:
         "204":
           description: Comment deleted
@@ -378,6 +408,7 @@ paths:
       operationId: listLabels
       tags: [labels]
       summary: List all labels
+      description: Labels are workspace-wide and not scoped to a single project.
       parameters:
         - $ref: '#/components/parameters/Cursor'
         - $ref: '#/components/parameters/Limit'
@@ -401,6 +432,7 @@ paths:
       operationId: createLabel
       tags: [labels]
       summary: Create a label
+      description: Label names must be unique across the workspace.
       requestBody:
         required: true
         content:
@@ -429,6 +461,7 @@ paths:
       operationId: deleteLabel
       tags: [labels]
       summary: Delete a label
+      description: Removes the label from every issue it was applied to.
       responses:
         "204":
           description: Label deleted
@@ -449,6 +482,7 @@ paths:
       operationId: assignUserToIssue
       tags: [issues]
       summary: Assign a user to an issue (idempotent)
+      description: Assigning a user who is already assigned is a no-op that still returns 204.
       responses:
         "204":
           description: User assigned
@@ -460,6 +494,7 @@ paths:
       operationId: unassignUserFromIssue
       tags: [issues]
       summary: Remove a user's assignment from an issue
+      description: Unassigning a user who is not assigned is a no-op that still returns 204.
       responses:
         "204":
           description: Assignment removed
@@ -475,6 +510,7 @@ paths:
       operationId: listWebhooks
       tags: [webhooks]
       summary: List webhook subscriptions for a project
+      description: Returns every subscription registered for the project, regardless of event filters.
       responses:
         "200":
           description: A list of webhook subscriptions
@@ -492,6 +528,7 @@ paths:
       operationId: createWebhook
       tags: [webhooks]
       summary: Create a webhook subscription
+      description: The secret is used to sign delivery payloads and is never returned in subsequent responses.
       requestBody:
         required: true
         content:
@@ -523,6 +560,7 @@ paths:
       operationId: getWebhook
       tags: [webhooks]
       summary: Get a webhook subscription
+      description: The response never includes the subscription's signing secret.
       responses:
         "200":
           description: The webhook subscription
@@ -538,6 +576,7 @@ paths:
       operationId: deleteWebhook
       tags: [webhooks]
       summary: Delete a webhook subscription
+      description: Stops future deliveries; already-queued deliveries may still be attempted.
       responses:
         "204":
           description: Webhook subscription deleted
