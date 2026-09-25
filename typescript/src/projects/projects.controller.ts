@@ -1,5 +1,4 @@
-import { Controller, Get, NotImplementedException, Param, Patch, Post } from '@nestjs/common';
-import z from 'zod';
+import { Controller, Get, NotImplementedException, Patch, Post } from '@nestjs/common';
 
 @Controller('projects')
 export class ProjectsController {
@@ -14,32 +13,32 @@ export class ProjectsController {
   }
 
   @Get(':projectId')
-  getProject(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  getProject() {
     throw new NotImplementedException();
   }
 
   @Patch(':projectId')
-  updateProject(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  updateProject() {
     throw new NotImplementedException();
   }
 
   @Get(':projectId/issues')
-  getProjectIssues(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  getProjectIssues() {
     throw new NotImplementedException();
   }
 
   @Post(':projectId/issues')
-  createIssue(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  createIssue() {
     throw new NotImplementedException();
   }
 
   @Get(':projectId/webhooks')
-  getProjectWebhooks(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  getProjectWebhooks() {
     throw new NotImplementedException();
   }
 
   @Post(':projectId/webhooks')
-  createWebhook(@Param('projectId', { schema: z.string().min(1) }) projectId: string) {
+  createWebhook() {
     throw new NotImplementedException();
   }
 }

@@ -1,14 +1,14 @@
-import { Controller, Delete, Get, NotImplementedException, Param } from '@nestjs/common';
+import { Controller, Delete, Get, NotImplementedException } from '@nestjs/common';
 
 @Controller('webhooks')
 export class WebhooksController {
   @Get(':webhookId')
-  getWebhook(@Param('webhookId') webhookId: string){
+  getWebhook(){
     throw new NotImplementedException();
   }
 
   @Delete(':webhookId')
-  deleteWebhook(@Param('webhookId') webhookId: string) {
+  deleteWebhook() {
     throw new NotImplementedException();
   }
 }

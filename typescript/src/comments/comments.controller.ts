@@ -1,15 +1,14 @@
-import { Controller, Delete, NotImplementedException, Param, Patch } from '@nestjs/common';
-import z from 'zod';
+import { Controller, Delete, NotImplementedException, Patch } from '@nestjs/common';
 
 @Controller('comments')
 export class CommentsController {
   @Patch(':commentId')
-  updateComment(@Param('commentId', {schema: z.string().min(1)}) commentId: string) {
+  updateComment() {
     throw new NotImplementedException();
   }
 
   @Delete(':commentId')
-  deleteComment(@Param('commentId', {schema: z.string().min(1)}) commentId: string) {
+  deleteComment() {
     throw new NotImplementedException();
   }
 }
