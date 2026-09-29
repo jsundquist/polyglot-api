@@ -1,14 +1,23 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 
 import { Prisma, labels } from '../generated/prisma/client.js';
 
 @Injectable()
 export class LabelsService {
+  constructor(private readonly prisma: PrismaService) {}
 
-  constructor(private readonly prisma: PrismaService) { }
-
-  async fetchLabels(cursor: string, limit: number = 50): Promise<{ items: labels[], pagination: { next_cursor: string | null, limit: number } }> {
+  async fetchLabels(
+    cursor: string,
+    limit: number = 50,
+  ): Promise<{
+    items: labels[];
+    pagination: { next_cursor: string | null; limit: number };
+  }> {
     const items = await this.prisma.labels.findMany({
       take: limit,
       orderBy: { id: 'asc' },
@@ -28,8 +37,13 @@ export class LabelsService {
     try {
       return await this.prisma.labels.create({ data });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-        throw new UnprocessableEntityException(`A label with the name of ${data.name} already exists`);
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2002'
+      ) {
+        throw new UnprocessableEntityException(
+          `A label with the name of ${data.name} already exists`,
+        );
       }
       throw e;
     }
@@ -39,7 +53,10 @@ export class LabelsService {
     try {
       return await this.prisma.labels.delete({ where: { id } });
     } catch (e) {
-      if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2025') {
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === 'P2025'
+      ) {
         throw new NotFoundException(`Label does not exist with this id`);
       }
       throw e;

@@ -1,34 +1,93 @@
-import { Controller, Delete, Get, NotImplementedException, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
+import z from 'zod';
+import { IssuesService } from './issues.service.js';
+import { issue_status } from '../generated/prisma/client.js';
+import {
+  noNullBytes,
+  optionalPositiveIntQuery,
+  optionalUuidQuery,
+} from '../common/zod.util.js';
 
 @Controller('issues')
 export class IssuesController {
+  constructor(private readonly issuesService: IssuesService) {}
+
   @Get(':issueId')
-  getIssue() {
-    throw new NotImplementedException();
+  getIssue(@Param('issueId', { schema: z.uuidv4() }) issueId: string) {
+    return this.issuesService.getIssue(issueId);
   }
 
   @Patch(':issueId')
-  updateIssue() {
-    throw new NotImplementedException();
+  updateIssue(
+    @Param('issueId', { schema: z.uuidv4() }) issueId: string,
+    @Body({
+      schema: z.object({
+        title: noNullBytes(z.string().min(1)).optional(),
+        description: noNullBytes(z.string()).optional(),
+        status: z.enum(issue_status).optional(),
+        label_ids: z.array(z.uuidv4()).optional(),
+      }),
+    })
+    data: {
+      title?: string;
+      description?: string;
+      status?: issue_status;
+      label_ids?: string[];
+    },
+  ) {
+    return this.issuesService.updateIssue(issueId, data);
   }
 
   @Get(':issueId/comments')
-  getIssueComments() {
-    throw new NotImplementedException();
+  getIssueComments(
+    @Param('issueId', { schema: z.uuidv4() }) issueId: string,
+    @Query('cursor', { schema: optionalUuidQuery() }) cursor: string,
+    @Query('limit', { schema: optionalPositiveIntQuery() })
+    limit: number = 50,
+  ) {
+    return this.issuesService.getIssueComments(issueId, { cursor, limit });
   }
 
   @Post(':issueId/comments')
-  createIssueComments() {
-    throw new NotImplementedException();
+  createIssueComments(
+    @Param('issueId', { schema: z.uuidv4() }) issueId: string,
+    @Body({
+      schema: z.object({
+        body: noNullBytes(z.string().min(1)),
+        author_id: z.uuidv4(),
+      }),
+    })
+    data: { body: string; author_id: string },
+  ) {
+    return this.issuesService.createIssueComment(issueId, data);
   }
 
   @Put(':issueId/assignees/:userId')
-  updateIssueAssignees() {
-    throw new NotImplementedException();
+  @HttpCode(204)
+  updateIssueAssignees(
+    @Param('issueId', { schema: z.uuidv4() }) issueId: string,
+    @Param('userId', { schema: z.uuidv4() }) userId: string,
+  ) {
+    return this.issuesService.assignUser(issueId, userId);
   }
 
   @Delete(':issueId/assignees/:userId')
-  removeIssueAssignees() {
-    throw new NotImplementedException();
+  @HttpCode(204)
+  removeIssueAssignees(
+    @Param('issueId', { schema: z.uuidv4() }) issueId: string,
+    @Param('userId', { schema: z.uuidv4() }) userId: string,
+  ) {
+    return this.issuesService.unassignUser(issueId, userId);
   }
 }

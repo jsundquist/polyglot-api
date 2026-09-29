@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { WebhooksController } from './webhooks.controller.js';
+import { WebhooksService } from './webhooks.service.js';
+import { PrismaService } from '../prisma/prisma.service.js';
 
 describe('WebhooksController', () => {
   let controller: WebhooksController;
@@ -7,6 +9,7 @@ describe('WebhooksController', () => {
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [WebhooksController],
+      providers: [WebhooksService, { provide: PrismaService, useValue: {} }],
     }).compile();
 
     controller = module.get<WebhooksController>(WebhooksController);

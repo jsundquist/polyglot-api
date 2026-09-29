@@ -1,0 +1,138 @@
+name: TypeScript CI
+
+# Scoped to the typescript implementation (plus the shared infra/spec/
+# contract-tests it depends on) so that adding another language later is
+# just another path-filtered workflow file - it never has to touch this one.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'typescript/**'
+      - 'infra/**'
+      - 'spec/spec.yaml'
+      - 'contract-tests/**'
+      - '.github/workflows/typescript-ci.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'typescript/**'
+      - 'infra/**'
+      - 'spec/spec.yaml'
+      - 'contract-tests/**'
+      - '.github/workflows/typescript-ci.yaml'
+
+defaults:
+  run:
+    working-directory: typescript
+
+env:
+  DATABASE_URL: postgres://polyglot:polyglot@localhost:5432/polyglot_api?sslmode=disable
+  API_KEY: ci-key
+
+jobs:
+  build-lint-test:
+    name: Build, lint, unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: typescript/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Lint
+        run: pnpm run lint
+
+      - name: Unit tests
+        run: pnpm run test
+
+  e2e-and-contract-tests:
+    name: E2E + contract tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: polyglot
+          POSTGRES_PASSWORD: polyglot
+          POSTGRES_DB: polyglot_api
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U polyglot -d polyglot_api"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dbmate
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          sudo chmod +x /usr/local/bin/dbmate
+
+      - name: Run migrations
+        working-directory: infra
+        run: dbmate up
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: typescript/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm exec prisma generate
+
+      - name: Build
+        run: pnpm run build
+
+      - name: E2E tests
+        run: pnpm run test:e2e
+
+      - name: Start server
+        run: node dist/main.js &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in time" >&2
+          exit 1
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run contract tests
+        working-directory: contract-tests
+        env:
+          CONTRACT_TEST_BASE_URL: http://localhost:8080/v1
+          CONTRACT_TEST_API_KEY: ci-key
+        run: ./run.sh

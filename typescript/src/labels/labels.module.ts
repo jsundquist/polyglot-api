@@ -6,6 +6,6 @@ import { PrismaModule } from '../prisma/prisma.module.js';
 @Module({
   imports: [PrismaModule],
   controllers: [LabelsController],
-  providers: [LabelsService]
+  providers: [LabelsService],
 })
 export class LabelsModule {}
