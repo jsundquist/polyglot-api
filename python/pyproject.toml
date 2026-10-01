@@ -1,0 +1,21 @@
+[project]
+name = "polyglot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Jonathan Sundquist", email = "jsundquist@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi[standard]>=0.141.1",
+    "psycopg[binary]>=3.3.6",
+    "sqlmodel>=0.0.47",
+]
+
+[project.scripts]
+polyglot = "polyglot:main"
+
+[build-system]
+requires = ["uv_build>=0.12.19,<0.13.0"]
+build-backend = "uv_build"

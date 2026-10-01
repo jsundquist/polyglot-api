@@ -33,6 +33,28 @@ language implementation shares the same Postgres instance (see `/infra`),
 depending on any one implementation's auth internals. This is the only place
 the suite talks to anything other than the HTTP API.
 
+## Prerequisites
+
+`run.sh` only sets up the Python side (venv + pytest) - it does **not** start
+the implementation under test. It's HTTP-only and implementation-agnostic on
+purpose, so it can't know how to boot a NestJS app vs. a future Python/Go
+one. Before running it, the target implementation must already be up:
+
+1. **Postgres running**: `cd infra && docker compose up -d`
+2. **Migrations applied**: `cd infra && dbmate up`
+3. **The implementation built and listening** on the spec's base URL
+   (`http://localhost:8080/v1`). For the TypeScript implementation:
+   ```sh
+   cd typescript
+   pnpm exec prisma generate   # only needed after a fresh clone or schema change
+   pnpm run build
+   node dist/main.js           # or: pnpm run start:dev
+   ```
+
+If any test fails with a connection error rather than an assertion failure,
+this is almost always why - check the target server is actually reachable at
+`CONTRACT_TEST_BASE_URL` first.
+
 ## Running
 
 ```sh
@@ -54,10 +76,6 @@ Configure via env vars (all optional, defaults match local dev):
 | `CONTRACT_TEST_BASE_URL` | `http://localhost:8080/v1` |
 | `CONTRACT_TEST_API_KEY` | `dev-local-key` |
 | `DATABASE_URL` | `postgres://polyglot:polyglot@localhost:5432/polyglot_api?sslmode=disable` |
-
-The target implementation must already be running (`infra/`'s Postgres up,
-migrations applied, the app started and listening on the spec's base URL)
-before you run this.
 
 ## A note on `test_schema.py` and status codes
 
