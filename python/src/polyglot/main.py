@@ -1,9 +1,10 @@
-from fastapi import APIRouter, FastAPI, Request
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from polyglot.common.auth import require_api_key
 from polyglot.labels.router import router as labels_router
 from polyglot.projects.router import router as projects_router
 from polyglot.issues.router import router as issues_router
@@ -11,7 +12,7 @@ from polyglot.comments.router import router as comments_router
 
 app = FastAPI()
 
-api_v1 = APIRouter(prefix="/v1")
+api_v1 = APIRouter(prefix="/v1", dependencies=[Depends(require_api_key)])
 
 api_v1.include_router(labels_router)
 api_v1.include_router(projects_router)
@@ -21,6 +22,7 @@ api_v1.include_router(comments_router)
 app.include_router(api_v1)
 
 CODES = {
+    401: "unauthorized",
     404: "not_found",
     405: "method_not_allowed",
     409: "conflict",
@@ -39,6 +41,12 @@ async def http_exception_handler(request: Request, exc: StarletteHTTPException):
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    # Path ids are opaque strings in the spec, so a malformed id is just "not found".
+    if any(err["loc"][0] == "path" for err in exc.errors()):
+        return JSONResponse(
+            status_code=404,
+            content={"code": "not_found", "message": "Resource not found"},
+        )
     return JSONResponse(
         status_code=422,
         content={

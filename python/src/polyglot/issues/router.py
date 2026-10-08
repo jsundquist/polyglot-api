@@ -1,27 +1,66 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Body, HTTPException, Query
+from uuid import UUID
+
+from polyglot.comments import service as comment_service
+from polyglot.comments.schemas import CommentRead
+from polyglot.common.pagination import Page
+from polyglot.db.db import SessionDep
+from polyglot.issues import service
+from polyglot.issues.errors import AssigneeNotFoundError, InvalidStatusTransitionError, LabelNotFoundError
+from polyglot.issues.schemas import IssueRead, IssueUpdate
 
 router = APIRouter(prefix="/issues", tags=["issues"])
 
-@router.get("/{issue_id}")
-def get_issue(issue_id: str):
-    return {"Hello": issue_id}
+@router.get("/{issue_id}", response_model=IssueRead)
+def get_issue(session: SessionDep, issue_id: UUID):
+    issue = service.get_issue(session, issue_id)
+    if not issue:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    return issue
 
-@router.patch("/{issue_id}")
-def update_issue(issue_id: str):
-    return {"Hello": issue_id}
+@router.patch("/{issue_id}", response_model=IssueRead)
+def update_issue(session: SessionDep, issue_id: UUID, data: IssueUpdate):
+    try:
+        issue = service.update_issue(session, issue_id, data)
+        if not issue:
+            raise HTTPException(status_code=404, detail="Issue not found")
+        return issue
+    except InvalidStatusTransitionError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    except LabelNotFoundError as e:
+        raise HTTPException(status_code=422, detail=str(e))
+    except AssigneeNotFoundError as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
-@router.get("/{issue_id}/comments")
-def get_issue_comments(issue_id: str):
-    return {"Hello": issue_id}
 
-@router.post("/{issue_id}/comments")
-def create_issue_comment(issue_id: str):
-    return {"Hello": issue_id}
+@router.get("/{issue_id}/comments", response_model=Page[CommentRead])
+def get_issue_comments(session: SessionDep, issue_id: UUID, limit: int = Query(20, ge=1, le=100), cursor: UUID | None = None):
+    response = comment_service.get_comments(session, issue_id, limit, cursor)
+    if not response:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    return response
 
-@router.put("/{issue_id}/assignees/{user_id}")
-def update_issue_assignee(issue_id: str, user_id: str):
-    return {"Hello": issue_id, "World": user_id}
+@router.post("/{issue_id}/comments", response_model=CommentRead, status_code=201)
+def create_issue_comment(session: SessionDep, issue_id: UUID, body: str = Body(embed=True)):
+    response = comment_service.create_comment(session, issue_id, body)
+    if not response:
+        raise HTTPException(status_code=404, detail="Issue not found")
+    return response
 
-@router.delete("/{issue_id}/assignees/{user_id}")
-def delete_issue_assignee(issue_id: str, user_id: str):
-    return {"Hello": issue_id, "World": user_id}
+@router.put("/{issue_id}/assignees/{user_id}", status_code=204)
+def update_issue_assignee(session: SessionDep, issue_id: UUID, user_id: UUID):
+    try:
+        response = service.assign_user_to_issue(session, issue_id, user_id)
+        if not response:
+            raise HTTPException(status_code=404, detail="Issue or user not found")
+    except AssigneeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@router.delete("/{issue_id}/assignees/{user_id}", status_code=204)
+def delete_issue_assignee(session: SessionDep, issue_id: UUID, user_id: UUID):
+    try:
+        response = service.remove_user_from_issue(session, issue_id, user_id)
+        if not response:
+            raise HTTPException(status_code=404, detail="Issue or user not found")
+    except AssigneeNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))

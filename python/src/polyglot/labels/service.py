@@ -7,7 +7,7 @@ from polyglot.labels.models import Label
 from polyglot.labels.schemas import LabelRead, LabelCreate
 
 def list_labels(session: Session, limit: int, cursor: UUID | None = None) -> Page[LabelRead]:
-    stmt = select(Label).order_by(Label.id)
+    stmt = select(Label).order_by(Label.id) # type: ignore
     if cursor:
         stmt = stmt.where(Label.id > cursor)
     response = session.exec(stmt.limit(limit)).all()

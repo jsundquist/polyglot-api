@@ -2,11 +2,10 @@ from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
 from polyglot.common.pagination import Page
 from polyglot.db.db import SessionDep
-from polyglot.issues.schemas import IssueCreate
 
 from polyglot.issues import service as issue_service
 from polyglot.issues.errors import LabelNotFoundError, AssigneeNotFoundError
-from polyglot.issues.schemas import IssueCreate, IssueRead
+from polyglot.issues.schemas import IssueCreate, IssueRead, IssueStatus
 
 from polyglot.projects import service
 from polyglot.projects.errors import DuplicateProjectKeyError, ProjectArchiveError
@@ -46,13 +45,13 @@ def update_project(session: SessionDep, project_id: UUID, data: ProjectUpdate):
     return project
 
 @router.get("/{project_id}/issues", response_model=Page[IssueRead])
-def get_project_issues(session: SessionDep, project_id: UUID, limit: int = Query(20, ge=1, le=100), cursor: UUID | None = None):
+def get_project_issues(session: SessionDep, project_id: UUID, limit: int = Query(20, ge=1, le=100), cursor: UUID | None = None, status: IssueStatus | None = None, label: str | None = None, assignee: UUID | None = None):
     project = service.get_project(session, project_id)
     
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    return issue_service.get_issues(session, project_id, limit, cursor)
+    return issue_service.get_issues(session, project_id, limit, cursor, status=status, label=label, assignee=assignee)
 
 @router.post("/{project_id}/issues", status_code=201, response_model=IssueRead)
 def create_project_issues(session: SessionDep, project_id: UUID, data: IssueCreate):
