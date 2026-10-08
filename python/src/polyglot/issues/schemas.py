@@ -4,6 +4,8 @@ from pydantic import field_validator
 from sqlmodel import Field, SQLModel
 from uuid import UUID
 
+from polyglot.common.validators import SafeText
+
 IssueStatus = Literal["open", "in-progress", "closed"]
 
 class IssueRead(SQLModel):
@@ -18,8 +20,8 @@ class IssueRead(SQLModel):
     updated_at: datetime
 
 class IssueCreate(SQLModel):
-    title: str = Field(min_length=1)
-    description: str | None = None
+    title: SafeText = Field(min_length=1)
+    description: SafeText | None = None
     label_ids: list[UUID] = []
     assignee_ids: list[UUID] = []
 
@@ -29,8 +31,8 @@ class IssueCreate(SQLModel):
         return list(dict.fromkeys(ids))
 
 class IssueUpdate(SQLModel):
-    title: str | None = Field(default=None, min_length=1)
-    description: str | None = None
+    title: SafeText | None = Field(default=None, min_length=1)
+    description: SafeText | None = None
     status: IssueStatus | None = None
     label_ids: list[UUID] | None = None
     assignee_ids: list[UUID] | None = None

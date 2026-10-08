@@ -4,6 +4,8 @@ from pydantic import field_validator
 from sqlmodel import SQLModel
 from uuid import UUID
 
+from polyglot.common.validators import SafeText
+
 class ProjectRead(SQLModel):
     id: UUID
     name: str
@@ -14,14 +16,14 @@ class ProjectRead(SQLModel):
     updated_at: datetime
     
 class ProjectCreate(SQLModel):
-    name: str
-    key: str
-    description: str | None = None
+    name: SafeText
+    key: SafeText
+    description: SafeText | None = None
 
 
 class ProjectUpdate(SQLModel):
-    name: str | None = None
-    description: str | None = None
+    name: SafeText | None = None
+    description: SafeText | None = None
     status: Literal["active", "archived"] | None = None
 
     @field_validator("name")

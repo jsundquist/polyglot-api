@@ -4,11 +4,13 @@ from polyglot.common.pagination import Page, Pagination
 from sqlmodel import Session, select
 from uuid import UUID
 
-from polyglot.comments.schemas import CommentRead, CommentUpdate
+from polyglot.comments.schemas import CommentCreate, CommentRead, CommentUpdate
 
 from polyglot.comments.models import Comment
 
+from polyglot.issues.errors import AssigneeNotFoundError
 from polyglot.issues.service import get_issue
+from polyglot.users.models import User
 
 def get_comments(session: Session, issue_id: UUID, limit: int, cursor: UUID | None = None) -> Page[CommentRead] | None:
     issue = get_issue(session, issue_id)
@@ -31,12 +33,15 @@ def get_comments(session: Session, issue_id: UUID, limit: int, cursor: UUID | No
         pagination=Pagination(limit=limit, next_cursor=str(response[-1].id) if len(response) == limit else None),
     )
 
-def create_comment(session: Session, issue_id: UUID, body: str) -> Comment | None:
+def create_comment(session: Session, issue_id: UUID, data: CommentCreate) -> Comment | None:
     issue = get_issue(session, issue_id)
     if not issue:
         return None
-    
-    comment = Comment.model_validate({"issue_id": issue_id, "body": body, "author_id": UUID(int=0)})  # Placeholder for author_id, replace with actual user ID
+
+    if not session.get(User, data.author_id):
+        raise AssigneeNotFoundError(f"Author not found: {data.author_id}")
+
+    comment = Comment.model_validate({"issue_id": issue_id, "body": data.body, "author_id": data.author_id})
     session.add(comment)
     session.commit()
     session.refresh(comment)

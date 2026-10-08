@@ -8,4 +8,5 @@ def _no_null_bytes(v: str) -> str:
     return v
 
 
+SafeText = Annotated[str, AfterValidator(_no_null_bytes)]
 NonEmptyText = Annotated[str, Field(min_length=1), AfterValidator(_no_null_bytes)]

@@ -4,6 +4,8 @@ from pydantic import AnyHttpUrl, field_validator
 from sqlmodel import Field, SQLModel
 from uuid import UUID
 
+from polyglot.common.validators import SafeText
+
 class WebhookEvent(str, Enum):
     issue_created = "issue.created"
     issue_updated = "issue.updated"
@@ -19,7 +21,7 @@ class WebhookRead(SQLModel):
 class WebhookCreate(SQLModel):
     url: AnyHttpUrl
     events: list[WebhookEvent] = Field(min_length=1)
-    secret: str | None = Field(default=None, min_length=1)
+    secret: SafeText | None = Field(default=None, min_length=1)
 
     @field_validator("events")
     @classmethod

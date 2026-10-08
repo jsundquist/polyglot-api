@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Body, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
 
 from polyglot.comments import service as comment_service
-from polyglot.comments.schemas import CommentRead
+from polyglot.comments.schemas import CommentCreate, CommentRead
 from polyglot.common.pagination import Page
 from polyglot.db.db import SessionDep
 from polyglot.issues import service
@@ -41,8 +41,11 @@ def get_issue_comments(session: SessionDep, issue_id: UUID, limit: int = Query(2
     return response
 
 @router.post("/{issue_id}/comments", response_model=CommentRead, status_code=201)
-def create_issue_comment(session: SessionDep, issue_id: UUID, body: str = Body(embed=True)):
-    response = comment_service.create_comment(session, issue_id, body)
+def create_issue_comment(session: SessionDep, issue_id: UUID, data: CommentCreate):
+    try:
+        response = comment_service.create_comment(session, issue_id, data)
+    except AssigneeNotFoundError as e:
+        raise HTTPException(status_code=422, detail=str(e))
     if not response:
         raise HTTPException(status_code=404, detail="Issue not found")
     return response
