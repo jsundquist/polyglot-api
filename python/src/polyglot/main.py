@@ -9,6 +9,7 @@ from polyglot.labels.router import router as labels_router
 from polyglot.projects.router import router as projects_router
 from polyglot.issues.router import router as issues_router
 from polyglot.comments.router import router as comments_router
+from polyglot.webhooks.router import router as webhooks_router
 
 app = FastAPI()
 
@@ -18,6 +19,7 @@ api_v1.include_router(labels_router)
 api_v1.include_router(projects_router)
 api_v1.include_router(issues_router)
 api_v1.include_router(comments_router)
+api_v1.include_router(webhooks_router)
 
 app.include_router(api_v1)
 
