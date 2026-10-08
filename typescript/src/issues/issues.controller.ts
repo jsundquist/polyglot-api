@@ -12,7 +12,8 @@ import {
 } from '@nestjs/common';
 import z from 'zod';
 import { IssuesService } from './issues.service.js';
-import { issue_status } from '../generated/prisma/client.js';
+import type { issue_status } from '../generated/prisma/enums.js';
+import { issueStatusSchema } from '../common/issue-status.util.js';
 import {
   noNullBytes,
   optionalPositiveIntQuery,
@@ -35,7 +36,7 @@ export class IssuesController {
       schema: z.object({
         title: noNullBytes(z.string().min(1)).optional(),
         description: noNullBytes(z.string()).optional(),
-        status: z.enum(issue_status).optional(),
+        status: issueStatusSchema.optional(),
         label_ids: z.array(z.uuidv4()).optional(),
       }),
     })

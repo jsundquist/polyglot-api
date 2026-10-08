@@ -106,9 +106,9 @@ def test_issue_and_comment_lifecycle(session, base_url, seeded_user):
     assert "pagination" in listed
     assert any(i["id"] == issue_id for i in listed["items"])
 
-    resp = session.patch(f"{base_url}/issues/{issue_id}", json={"status": "in_progress"})
+    resp = session.patch(f"{base_url}/issues/{issue_id}", json={"status": "in-progress"})
     assert resp.status_code == HTTPStatus.OK
-    assert resp.json()["status"] == "in_progress"
+    assert resp.json()["status"] == "in-progress"
 
     resp = session.patch(f"{base_url}/issues/{issue_id}", json={"status": "open"})
     assert resp.status_code == HTTPStatus.CONFLICT

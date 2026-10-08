@@ -9,11 +9,9 @@ import {
 } from '@nestjs/common';
 import z from 'zod';
 import { ProjectsService } from './projects.service.js';
-import {
-  issue_status,
-  Prisma,
-  project_status,
-} from '../generated/prisma/client.js';
+import { Prisma, project_status } from '../generated/prisma/client.js';
+import type { issue_status } from '../generated/prisma/enums.js';
+import { issueStatusSchema } from '../common/issue-status.util.js';
 import type { projectsUpdateInput } from '../generated/prisma/models.js';
 import {
   noNullBytes,
@@ -72,7 +70,7 @@ export class ProjectsController {
   @Get(':projectId/issues')
   getProjectIssues(
     @Param('projectId', { schema: z.uuidv4() }) projectId: string,
-    @Query('issueStatus', { schema: z.enum(issue_status).optional() })
+    @Query('status', { schema: issueStatusSchema.optional() })
     issueStatus: issue_status,
     @Query('label', { schema: z.string().optional() }) label: string,
     @Query('assignee', { schema: optionalUuidQuery() }) assignee: string,
@@ -96,7 +94,7 @@ export class ProjectsController {
       schema: z.object({
         title: noNullBytes(z.string().min(1)),
         description: noNullBytes(z.string()).optional(),
-        status: z.enum(issue_status).optional(),
+        status: issueStatusSchema.optional(),
         label_ids: z.array(z.uuidv4()).optional(),
         assignee_ids: z.array(z.uuidv4()).optional(),
       }),
