@@ -1,16 +1,16 @@
 
-from datetime import datetime, timezone
-from polyglot.common.pagination import Page, Pagination
-from sqlmodel import Session, select
+from datetime import UTC, datetime
 from uuid import UUID
 
-from polyglot.comments.schemas import CommentCreate, CommentRead, CommentUpdate
+from sqlmodel import Session, select
 
 from polyglot.comments.models import Comment
-
+from polyglot.comments.schemas import CommentCreate, CommentRead, CommentUpdate
+from polyglot.common.pagination import Page, Pagination
 from polyglot.issues.errors import AssigneeNotFoundError
 from polyglot.issues.service import get_issue
 from polyglot.users.models import User
+
 
 def get_comments(session: Session, issue_id: UUID, limit: int, cursor: UUID | None = None) -> Page[CommentRead] | None:
     issue = get_issue(session, issue_id)
@@ -52,7 +52,7 @@ def update_comment(session: Session, comment_id: UUID, data: CommentUpdate) -> C
     if not comment:
         return None
     comment.body = data.body
-    comment.updated_at = datetime.now(timezone.utc)
+    comment.updated_at = datetime.now(UTC)
 
     session.add(comment)
     session.commit()

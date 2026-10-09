@@ -1,11 +1,15 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from uuid import UUID
 
 from sqlalchemy.orm import selectinload
 from sqlmodel import Session, select
-from uuid import UUID
 
-from polyglot.common.pagination import Pagination, Page
-from polyglot.issues.errors import AssigneeNotFoundError, InvalidStatusTransitionError, LabelNotFoundError
+from polyglot.common.pagination import Page, Pagination
+from polyglot.issues.errors import (
+    AssigneeNotFoundError,
+    InvalidStatusTransitionError,
+    LabelNotFoundError,
+)
 from polyglot.issues.models import Issue
 from polyglot.issues.schemas import IssueCreate, IssueRead, IssueStatus, IssueUpdate
 from polyglot.labels.models import Label
@@ -86,9 +90,8 @@ def update_issue(session: Session, issue_id: UUID, data: IssueUpdate) -> IssueRe
     if not issue:
         return None
 
-    if data.status is not None and data.status != issue.status:
-        if data.status not in ALLOWED_TRANSITIONS[issue.status]:
-            raise InvalidStatusTransitionError(f"Invalid status transition from '{issue.status}' to '{data.status}'")
+    if data.status is not None and data.status != issue.status and data.status not in ALLOWED_TRANSITIONS[issue.status]:
+        raise InvalidStatusTransitionError(f"Invalid status transition from '{issue.status}' to '{data.status}'")
 
     if data.label_ids is not None:
         labels = _fetch_by_ids(session, Label, data.label_ids)
@@ -107,7 +110,7 @@ def update_issue(session: Session, issue_id: UUID, data: IssueUpdate) -> IssueRe
     for key, value in data.model_dump(exclude_unset=True, exclude={"label_ids", "assignee_ids"}).items():
         setattr(issue, key, value)
 
-    issue.updated_at = datetime.now(timezone.utc)
+    issue.updated_at = datetime.now(UTC)
     session.add(issue)
     session.commit()
     session.refresh(issue)

@@ -1,5 +1,6 @@
-from fastapi import APIRouter, HTTPException
 from uuid import UUID
+
+from fastapi import APIRouter, HTTPException
 
 from polyglot.db.db import SessionDep
 from polyglot.projects import service as project_service

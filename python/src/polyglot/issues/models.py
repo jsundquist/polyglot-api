@@ -1,10 +1,12 @@
-from datetime import datetime, timezone
-from polyglot.users.models import User
-from sqlalchemy import Column, Enum
-from sqlmodel import Field, Relationship, SQLModel
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
+from sqlalchemy import Column, Enum
+from sqlmodel import Field, Relationship, SQLModel
+
 from polyglot.labels.models import Label
+from polyglot.users.models import User
+
 
 class IssueLabel(SQLModel, table=True):
     __tablename__ = "issue_labels"  # type: ignore
@@ -37,5 +39,5 @@ class Issue(SQLModel, table=True):
     labels: list["Label"] = Relationship(link_model=IssueLabel)
     assignees: list["User"] = Relationship(link_model=IssueAssignee)
 
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

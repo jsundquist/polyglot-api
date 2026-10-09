@@ -1,12 +1,17 @@
-from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
 
 from polyglot.comments import service as comment_service
 from polyglot.comments.schemas import CommentCreate, CommentRead
 from polyglot.common.pagination import Page
 from polyglot.db.db import SessionDep
 from polyglot.issues import service
-from polyglot.issues.errors import AssigneeNotFoundError, InvalidStatusTransitionError, LabelNotFoundError
+from polyglot.issues.errors import (
+    AssigneeNotFoundError,
+    InvalidStatusTransitionError,
+    LabelNotFoundError,
+)
 from polyglot.issues.schemas import IssueRead, IssueUpdate
 
 router = APIRouter(prefix="/issues", tags=["issues"])

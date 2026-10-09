@@ -1,8 +1,10 @@
-from fastapi import APIRouter, HTTPException
 from uuid import UUID
+
+from fastapi import APIRouter, HTTPException
+
+from polyglot.comments import service
 from polyglot.comments.schemas import CommentRead, CommentUpdate
 from polyglot.db.db import SessionDep
-from polyglot.comments import service
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 

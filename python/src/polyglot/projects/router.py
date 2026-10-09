@@ -1,12 +1,12 @@
-from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
+
+from fastapi import APIRouter, HTTPException, Query
+
 from polyglot.common.pagination import Page
 from polyglot.db.db import SessionDep
-
 from polyglot.issues import service as issue_service
-from polyglot.issues.errors import LabelNotFoundError, AssigneeNotFoundError
+from polyglot.issues.errors import AssigneeNotFoundError, LabelNotFoundError
 from polyglot.issues.schemas import IssueCreate, IssueRead, IssueStatus
-
 from polyglot.projects import service
 from polyglot.projects.errors import DuplicateProjectKeyError, ProjectArchiveError
 from polyglot.projects.schemas import ProjectCreate, ProjectRead, ProjectUpdate

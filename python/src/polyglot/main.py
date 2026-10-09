@@ -4,11 +4,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from polyglot.comments.router import router as comments_router
 from polyglot.common.auth import require_api_key
+from polyglot.issues.router import router as issues_router
 from polyglot.labels.router import router as labels_router
 from polyglot.projects.router import router as projects_router
-from polyglot.issues.router import router as issues_router
-from polyglot.comments.router import router as comments_router
 from polyglot.webhooks.router import router as webhooks_router
 
 app = FastAPI()

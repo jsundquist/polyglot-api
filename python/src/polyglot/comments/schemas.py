@@ -1,9 +1,11 @@
 
 from datetime import datetime
-from sqlmodel import SQLModel
 from uuid import UUID
 
+from sqlmodel import SQLModel
+
 from polyglot.common.validators import NonEmptyText
+
 
 class CommentRead(SQLModel):
     id: UUID

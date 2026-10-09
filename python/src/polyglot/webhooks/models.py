@@ -1,8 +1,9 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
 from sqlalchemy import ARRAY, Column, Text
 from sqlmodel import Field, SQLModel
-from uuid import UUID, uuid4
+
 
 class WebhookSubscription(SQLModel, table=True):
     __tablename__ = "webhook_subscriptions" # type: ignore
@@ -12,4 +13,4 @@ class WebhookSubscription(SQLModel, table=True):
     url: str
     events: list[str] = Field(sa_column=Column(ARRAY(Text), nullable=False))
     secret: str
-    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))

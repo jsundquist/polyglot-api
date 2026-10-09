@@ -1,6 +1,7 @@
-from sqlmodel import create_engine, Session
 from typing import Annotated
+
 from fastapi import Depends
+from sqlmodel import Session, create_engine
 
 DATABASE_URL = "postgresql+psycopg://polyglot:polyglot@localhost:5432/polyglot_api"
 

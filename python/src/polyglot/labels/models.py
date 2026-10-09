@@ -1,5 +1,7 @@
-from sqlmodel import Field, SQLModel
 from uuid import UUID, uuid4
+
+from sqlmodel import Field, SQLModel
+
 
 class Label(SQLModel, table=True):
     __tablename__ = "labels" # type: ignore

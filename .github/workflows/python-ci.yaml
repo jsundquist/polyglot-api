@@ -1,0 +1,146 @@
+name: Python CI
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'python/**'
+      - 'infra/**'
+      - 'spec/spec.yaml'
+      - 'contract-tests/**'
+      - '.github/workflows/python-ci.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'python/**'
+      - 'infra/**'
+      - 'spec/spec.yaml'
+      - 'contract-tests/**'
+      - '.github/workflows/python-ci.yaml'
+
+defaults:
+  run:
+    working-directory: python
+
+env:
+  DATABASE_URL: postgres://polyglot:polyglot@localhost:5432/polyglot_api?sslmode=disable
+  POLYGLOT_API_KEY: ci-key
+
+jobs:
+  build-lint-test:
+    name: Build and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Install dependencies
+        run: uv sync --locked
+
+      - name: Build
+        run: uv run python -c "import polyglot.main"
+      
+      - name: Lint
+        run: uv run ruff check
+
+  e2e-and-contract-tests:
+    name: E2E + contract tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: polyglot
+          POSTGRES_PASSWORD: polyglot
+          POSTGRES_DB: polyglot_api
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U polyglot -d polyglot_api"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install dbmate
+        run: |
+          sudo curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
+          sudo chmod +x /usr/local/bin/dbmate
+
+      - name: Run migrations
+        working-directory: infra
+        run: dbmate up
+      
+      - name: Setup Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+      
+      - name: Install dependencies
+        run: uv sync --locked
+      
+      - name: Setup Server
+        run: uv run fastapi run src/polyglot/main.py --port 8080 &
+
+      - name: Wait for server
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/ > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Server did not become ready in time" >&2
+          exit 1
+
+      - name: Run contract tests
+        working-directory: contract-tests
+        env:
+          CONTRACT_TEST_BASE_URL: http://localhost:8080/v1
+          CONTRACT_TEST_API_KEY: ci-key
+        run: ./run.sh
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
+
+      - name: Verify uv.lock is up to date
+        run: uv lock --check
+
+      - name: Export locked requirements
+        run: uv export --frozen --no-dev --no-emit-project --no-hashes -o requirements-audit.txt
+
+      - name: Run dependency audit
+        run: uvx pip-audit -r requirements-audit.txt --no-deps --disable-pip
