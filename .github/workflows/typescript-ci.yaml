@@ -1,5 +1,8 @@
 name: TypeScript CI
 
+permissions:
+  contents: read
+
 # Scoped to the typescript implementation (plus the shared infra/spec/
 # contract-tests it depends on) so that adding another language later is
 # just another path-filtered workflow file - it never has to touch this one.

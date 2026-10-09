@@ -1,9 +1,11 @@
 import secrets
-from sqlmodel import Session, select
 from uuid import UUID
+
+from sqlmodel import Session, select
 
 from polyglot.webhooks.models import WebhookSubscription
 from polyglot.webhooks.schemas import WebhookCreate
+
 
 def list_webhooks(session: Session, project_id: UUID) -> list[WebhookSubscription]:
     stmt = (

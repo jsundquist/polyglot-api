@@ -1,10 +1,12 @@
 from datetime import datetime
 from enum import Enum
-from pydantic import AnyHttpUrl, field_validator
-from sqlmodel import Field, SQLModel
 from uuid import UUID
 
+from pydantic import AnyHttpUrl, field_validator
+from sqlmodel import Field, SQLModel
+
 from polyglot.common.validators import SafeText
+
 
 class WebhookEvent(str, Enum):
     issue_created = "issue.created"

@@ -1,8 +1,9 @@
 from datetime import datetime
 from typing import Literal
+from uuid import UUID
+
 from pydantic import field_validator
 from sqlmodel import Field, SQLModel
-from uuid import UUID
 
 from polyglot.common.validators import SafeText
 

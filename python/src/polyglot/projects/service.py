@@ -1,12 +1,14 @@
-from datetime import datetime, timezone
-from sqlalchemy.exc import IntegrityError
-from sqlmodel import Session, select
+from datetime import UTC, datetime
 from uuid import UUID
 
-from polyglot.common.pagination import Pagination, Page
+from sqlalchemy.exc import IntegrityError
+from sqlmodel import Session, select
+
+from polyglot.common.pagination import Page, Pagination
 from polyglot.projects.errors import DuplicateProjectKeyError, ProjectArchiveError
 from polyglot.projects.models import Project
 from polyglot.projects.schemas import ProjectCreate, ProjectRead, ProjectUpdate
+
 
 def project_list(session: Session, limit: int, cursor: UUID | None = None) -> Page[ProjectRead]:
     stmt = select(Project).order_by(Project.id)
@@ -40,7 +42,7 @@ def update_project(session: Session, id: UUID, data: ProjectUpdate) -> Project |
         raise ProjectArchiveError("Cannot change the status of an archived project")
 
 
-    project.updated_at = datetime.now(timezone.utc)
+    project.updated_at = datetime.now(UTC)
 
     for key, value in data.model_dump(exclude_unset=True).items():
         setattr(project, key, value)

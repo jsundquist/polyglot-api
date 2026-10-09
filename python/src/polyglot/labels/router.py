@@ -1,12 +1,12 @@
+from uuid import UUID
+
 from fastapi import APIRouter, HTTPException, Query
+from sqlalchemy.exc import IntegrityError
 
 from polyglot.common.pagination import Page
 from polyglot.db.db import SessionDep
 from polyglot.labels import service
 from polyglot.labels.schemas import LabelCreate, LabelRead
-from uuid import UUID
-
-from sqlalchemy.exc import IntegrityError
 
 router = APIRouter(prefix="/labels", tags=["labels"])
 

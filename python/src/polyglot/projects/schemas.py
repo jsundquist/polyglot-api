@@ -1,10 +1,12 @@
 from datetime import datetime
 from typing import Literal
-from pydantic import field_validator
-from sqlmodel import SQLModel
 from uuid import UUID
 
+from pydantic import field_validator
+from sqlmodel import SQLModel
+
 from polyglot.common.validators import SafeText
+
 
 class ProjectRead(SQLModel):
     id: UUID

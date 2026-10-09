@@ -1,10 +1,12 @@
 from uuid import UUID
-from polyglot.common.pagination import Pagination, Page
+
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, select
 
+from polyglot.common.pagination import Page, Pagination
 from polyglot.labels.models import Label
-from polyglot.labels.schemas import LabelRead, LabelCreate
+from polyglot.labels.schemas import LabelCreate, LabelRead
+
 
 def list_labels(session: Session, limit: int, cursor: UUID | None = None) -> Page[LabelRead]:
     stmt = select(Label).order_by(Label.id) # type: ignore
