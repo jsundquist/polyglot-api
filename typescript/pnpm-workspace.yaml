@@ -2,3 +2,12 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+
+overrides:
+  # GHSA-68fv-2mgg-jv7q: patched in 1.2.2
+  source-map-js: '>=1.2.2'
+  # GHSA-3f6p-5ww8-9rcr, GHSA-rgwj-5xj2-c3m3
+  mysql2: '>=3.23.1'
+  # GHSA-ggr8-5vv4-36mx: patched in 8.0.0 (major bump; used only by
+  # @prisma/config to merge prisma.config.ts, so verify `prisma generate`)
+  deepmerge-ts: '>=8.0.0'
