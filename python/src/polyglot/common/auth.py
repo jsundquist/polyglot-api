@@ -9,6 +9,7 @@ API_KEY = os.environ.get("POLYGLOT_API_KEY", "dev-local-key")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 bearer = HTTPBearer(auto_error=False)
 
+
 def require_api_key(
     api_key: str | None = Security(api_key_header),
     credentials: HTTPAuthorizationCredentials | None = Security(bearer),

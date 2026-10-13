@@ -1,14 +1,18 @@
+import os
 from typing import Annotated
 
 from fastapi import Depends
 from sqlmodel import Session, create_engine
 
-DATABASE_URL = "postgresql+psycopg://polyglot:polyglot@localhost:5432/polyglot_api"
+database = os.environ["SQLALCHEMY_DATABASE_URL"]
+engine = create_engine(
+    database, echo=os.environ.get("SQL_ECHO", "false").lower() == "true"
+)
 
-engine = create_engine(DATABASE_URL, echo=True)
 
 def get_session():
     with Session(engine) as session:
         yield session
+
 
 SessionDep = Annotated[Session, Depends(get_session)]

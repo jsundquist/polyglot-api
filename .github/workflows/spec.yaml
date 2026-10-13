@@ -1,5 +1,8 @@
 name: OpenAPI Spec CI
 
+permissions:
+  contents: read
+
 # Only run when the spec itself changes, on push to main or on any PR into main
 on:
   push:
@@ -14,21 +17,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
 
     steps:
       # Full history needed so oasdiff can diff against the base branch
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Lint spec
-        uses: stoplightio/spectral-action@latest
+        uses: stoplightio/spectral-action@6416fd018ae38e60136775066eb3e98172143141 # v0.8.13
         with:
           file_glob: 'spec/spec.yaml'
 
       - name: Check for breaking changes
         if: github.event_name == 'pull_request'
-        uses: oasdiff/oasdiff-action/breaking@main
+        uses: oasdiff/oasdiff-action/breaking@b9325c9e0a27ab65b0da3b766522cedec6be81dc # v0.1.18
         with:
           base: 'origin/${{ github.base_ref }}:spec/spec.yaml'
           revision: 'HEAD:spec/spec.yaml'

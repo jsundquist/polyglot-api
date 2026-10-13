@@ -8,15 +8,25 @@ from polyglot.labels.models import Label
 from polyglot.labels.schemas import LabelCreate, LabelRead
 
 
-def list_labels(session: Session, limit: int, cursor: UUID | None = None) -> Page[LabelRead]:
-    stmt = select(Label).order_by(Label.id) # type: ignore
+def list_labels(
+    session: Session, limit: int, cursor: UUID | None = None
+) -> Page[LabelRead]:
+    stmt = select(Label).order_by(Label.id)  # type: ignore
     if cursor:
         stmt = stmt.where(Label.id > cursor)
     response = session.exec(stmt.limit(limit)).all()
-    return Page(items=[LabelRead.model_validate(label) for label in response], pagination=Pagination(limit=limit, next_cursor=str(response[-1].id) if len(response) == limit else None))
+    return Page(
+        items=[LabelRead.model_validate(label) for label in response],
+        pagination=Pagination(
+            limit=limit,
+            next_cursor=str(response[-1].id) if len(response) == limit else None,
+        ),
+    )
+
 
 def get_label(session: Session, id: UUID) -> Label | None:
     return session.get(Label, id)
+
 
 def create_label(session: Session, data: LabelCreate) -> Label:
     label = Label.model_validate(data)
@@ -28,6 +38,7 @@ def create_label(session: Session, data: LabelCreate) -> Label:
         raise
     session.refresh(label)
     return label
+
 
 def delete_label(session: Session, id: UUID) -> bool:
     label = get_label(session, id)

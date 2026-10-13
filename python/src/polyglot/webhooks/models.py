@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel
 
 
 class WebhookSubscription(SQLModel, table=True):
-    __tablename__ = "webhook_subscriptions" # type: ignore
+    __tablename__ = "webhook_subscriptions"  # type: ignore
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     project_id: UUID = Field(foreign_key="projects.id")

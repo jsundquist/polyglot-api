@@ -92,9 +92,13 @@ jobs:
           persist-credentials: false
 
       - name: Install dbmate
+        env:
+          DBMATE_VERSION: v2.36.0
+          DBMATE_SHA256: 47e284b3d8cbad1ba5f090495aa05afd1bbd5f35e2ed5577aad06da74ce780ce
         run: |
-          sudo curl -fsSL -o /usr/local/bin/dbmate https://github.com/amacneil/dbmate/releases/latest/download/dbmate-linux-amd64
-          sudo chmod +x /usr/local/bin/dbmate
+          curl -fsSL -o /tmp/dbmate "https://github.com/amacneil/dbmate/releases/download/${DBMATE_VERSION}/dbmate-linux-amd64"
+          echo "${DBMATE_SHA256}  /tmp/dbmate" | sha256sum -c -
+          sudo install -m 0755 /tmp/dbmate /usr/local/bin/dbmate
 
       - name: Run migrations
         working-directory: infra
@@ -136,10 +140,8 @@ jobs:
           echo "Server did not become ready in time" >&2
           exit 1
 
-      - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: '3.12'
+      - name: Install uv
+        uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
 
       - name: Run contract tests
         working-directory: contract-tests

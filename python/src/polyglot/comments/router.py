@@ -8,6 +8,7 @@ from polyglot.db.db import SessionDep
 
 router = APIRouter(prefix="/comments", tags=["comments"])
 
+
 @router.patch("/{comment_id}", response_model=CommentRead)
 def update_comment(session: SessionDep, comment_id: UUID, data: CommentUpdate):
     comment = service.update_comment(session, comment_id, data)
@@ -16,6 +17,7 @@ def update_comment(session: SessionDep, comment_id: UUID, data: CommentUpdate):
         raise HTTPException(status_code=404, detail="Comment not found")
 
     return comment
+
 
 @router.delete("/{comment_id}", status_code=204)
 def delete_comment(session: SessionDep, comment_id: UUID):

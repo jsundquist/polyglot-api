@@ -5,7 +5,7 @@ from sqlmodel import Field, SQLModel
 
 
 class Comment(SQLModel, table=True):
-    __tablename__ = "comments" # type: ignore
+    __tablename__ = "comments"  # type: ignore
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     issue_id: UUID
     author_id: UUID

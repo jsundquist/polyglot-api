@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from uuid import UUID
 
@@ -15,9 +14,11 @@ class CommentRead(SQLModel):
     created_at: datetime
     updated_at: datetime
 
+
 class CommentCreate(SQLModel):
     body: NonEmptyText
     author_id: UUID
+
 
 class CommentUpdate(SQLModel):
     body: NonEmptyText
