@@ -1,4 +1,3 @@
-
 from uuid import UUID
 
 from sqlmodel import SQLModel
@@ -10,6 +9,7 @@ class LabelRead(SQLModel):
     id: UUID
     name: str
     color: str
+
 
 class LabelCreate(SQLModel):
     name: SafeText

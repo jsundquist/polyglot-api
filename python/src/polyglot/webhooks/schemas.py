@@ -13,12 +13,14 @@ class WebhookEvent(str, Enum):
     issue_updated = "issue.updated"
     issue_status_changed = "issue.status_changed"
 
+
 class WebhookRead(SQLModel):
     id: UUID
     project_id: UUID
     url: str
     events: list[WebhookEvent]
     created_at: datetime
+
 
 class WebhookCreate(SQLModel):
     url: AnyHttpUrl

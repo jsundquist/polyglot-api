@@ -30,6 +30,7 @@ defaults:
     working-directory: python
 
 env:
+  SQLALCHEMY_DATABASE_URL: "postgresql+psycopg://polyglot:polyglot@localhost:5432/polyglot_api"
   DATABASE_URL: postgres://polyglot:polyglot@localhost:5432/polyglot_api?sslmode=disable
   POLYGLOT_API_KEY: ci-key
 

@@ -16,7 +16,8 @@ class ProjectRead(SQLModel):
     status: Literal["active", "archived"]
     created_at: datetime
     updated_at: datetime
-    
+
+
 class ProjectCreate(SQLModel):
     name: SafeText
     key: SafeText

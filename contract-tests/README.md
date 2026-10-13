@@ -61,7 +61,6 @@ this is almost always why - check the target server is actually reachable at
 ./contract-tests/run.sh
 ```
 
-This creates a local `.venv`, installs `requirements.txt`, and runs pytest.
 Pass extra pytest args straight through, e.g.:
 
 ```sh

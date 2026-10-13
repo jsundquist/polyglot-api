@@ -21,9 +21,10 @@ class IssueAssignee(SQLModel, table=True):
     issue_id: UUID = Field(foreign_key="issues.id", primary_key=True)
     user_id: UUID = Field(foreign_key="users.id", primary_key=True)
 
+
 class Issue(SQLModel, table=True):
-    __tablename__ = "issues" # type: ignore
-    
+    __tablename__ = "issues"  # type: ignore
+
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     project_id: UUID = Field(foreign_key="projects.id")
     title: str
@@ -31,7 +32,9 @@ class Issue(SQLModel, table=True):
     status: str = Field(
         default="open",
         sa_column=Column(
-            Enum("open", "in-progress", "closed", name="issue_status", create_type=False),
+            Enum(
+                "open", "in-progress", "closed", name="issue_status", create_type=False
+            ),
             nullable=False,
             server_default="open",
         ),

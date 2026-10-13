@@ -6,7 +6,7 @@ from sqlmodel import Field, SQLModel
 
 
 class Project(SQLModel, table=True):
-    __tablename__ = "projects" # type: ignore
+    __tablename__ = "projects"  # type: ignore
 
     id: UUID = Field(primary_key=True, default_factory=uuid4)
     name: str
