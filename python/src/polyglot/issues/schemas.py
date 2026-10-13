@@ -9,6 +9,7 @@ from polyglot.common.validators import SafeText
 
 IssueStatus = Literal["open", "in-progress", "closed"]
 
+
 class IssueRead(SQLModel):
     id: UUID
     project_id: UUID
@@ -20,6 +21,7 @@ class IssueRead(SQLModel):
     created_at: datetime
     updated_at: datetime
 
+
 class IssueCreate(SQLModel):
     title: SafeText = Field(min_length=1)
     description: SafeText | None = None
@@ -30,6 +32,7 @@ class IssueCreate(SQLModel):
     @classmethod
     def dedupe(cls, ids: list[UUID]) -> list[UUID]:
         return list(dict.fromkeys(ids))
+
 
 class IssueUpdate(SQLModel):
     title: SafeText | None = Field(default=None, min_length=1)

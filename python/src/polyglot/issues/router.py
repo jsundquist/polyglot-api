@@ -16,12 +16,14 @@ from polyglot.issues.schemas import IssueRead, IssueUpdate
 
 router = APIRouter(prefix="/issues", tags=["issues"])
 
+
 @router.get("/{issue_id}", response_model=IssueRead)
 def get_issue(session: SessionDep, issue_id: UUID):
     issue = service.get_issue(session, issue_id)
     if not issue:
         raise HTTPException(status_code=404, detail="Issue not found")
     return issue
+
 
 @router.patch("/{issue_id}", response_model=IssueRead)
 def update_issue(session: SessionDep, issue_id: UUID, data: IssueUpdate):
@@ -39,11 +41,17 @@ def update_issue(session: SessionDep, issue_id: UUID, data: IssueUpdate):
 
 
 @router.get("/{issue_id}/comments", response_model=Page[CommentRead])
-def get_issue_comments(session: SessionDep, issue_id: UUID, limit: int = Query(20, ge=1, le=100), cursor: UUID | None = None):
+def get_issue_comments(
+    session: SessionDep,
+    issue_id: UUID,
+    limit: int = Query(20, ge=1, le=100),
+    cursor: UUID | None = None,
+):
     response = comment_service.get_comments(session, issue_id, limit, cursor)
     if not response:
         raise HTTPException(status_code=404, detail="Issue not found")
     return response
+
 
 @router.post("/{issue_id}/comments", response_model=CommentRead, status_code=201)
 def create_issue_comment(session: SessionDep, issue_id: UUID, data: CommentCreate):
@@ -55,6 +63,7 @@ def create_issue_comment(session: SessionDep, issue_id: UUID, data: CommentCreat
         raise HTTPException(status_code=404, detail="Issue not found")
     return response
 
+
 @router.put("/{issue_id}/assignees/{user_id}", status_code=204)
 def update_issue_assignee(session: SessionDep, issue_id: UUID, user_id: UUID):
     try:
@@ -63,6 +72,7 @@ def update_issue_assignee(session: SessionDep, issue_id: UUID, user_id: UUID):
             raise HTTPException(status_code=404, detail="Issue or user not found")
     except AssigneeNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
 
 @router.delete("/{issue_id}/assignees/{user_id}", status_code=204)
 def delete_issue_assignee(session: SessionDep, issue_id: UUID, user_id: UUID):

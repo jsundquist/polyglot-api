@@ -31,15 +31,14 @@ CODES = {
     422: "validation_error",
 }
 
+
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request: Request, exc: StarletteHTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content={
-            "code": CODES.get(exc.status_code),
-            "message": exc.detail
-        },
+        content={"code": CODES.get(exc.status_code), "message": exc.detail},
     )
+
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, exc: RequestValidationError):
@@ -54,13 +53,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content={
             "code": "validation_error",
             "message": exc.errors()[0]["msg"],
-            "details": {
-                "errors": jsonable_encoder(exc.errors())
-            }
+            "details": {"errors": jsonable_encoder(exc.errors())},
         },
     )
+
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
-

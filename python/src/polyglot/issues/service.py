@@ -21,13 +21,14 @@ ALLOWED_TRANSITIONS = {
     "closed": {"open"},
 }
 
+
 def to_issue_read(issue: Issue) -> IssueRead:
     return IssueRead(
         id=issue.id,
         project_id=issue.project_id,
         title=issue.title,
         description=issue.description,
-        status=issue.status, # type: ignore
+        status=issue.status,  # type: ignore
         label_ids=[label.id for label in issue.labels],
         assignee_ids=[user.id for user in issue.assignees],
         created_at=issue.created_at,
@@ -35,7 +36,15 @@ def to_issue_read(issue: Issue) -> IssueRead:
     )
 
 
-def get_issues(session: Session, project_id: UUID, limit: int, cursor: UUID | None = None, status: IssueStatus | None = None, label: str | None = None, assignee: UUID | None = None) -> Page[IssueRead]:
+def get_issues(
+    session: Session,
+    project_id: UUID,
+    limit: int,
+    cursor: UUID | None = None,
+    status: IssueStatus | None = None,
+    label: str | None = None,
+    assignee: UUID | None = None,
+) -> Page[IssueRead]:
     stmt = (
         select(Issue)
         .where(Issue.project_id == project_id)
@@ -43,7 +52,7 @@ def get_issues(session: Session, project_id: UUID, limit: int, cursor: UUID | No
             selectinload(Issue.labels),  # type: ignore
             selectinload(Issue.assignees),  # type: ignore
         )
-        .order_by(Issue.id) # type: ignore
+        .order_by(Issue.id)  # type: ignore
     )
     if cursor:
         stmt = stmt.where(Issue.id > cursor)
@@ -56,14 +65,19 @@ def get_issues(session: Session, project_id: UUID, limit: int, cursor: UUID | No
     response = session.exec(stmt.limit(limit)).all()
     return Page(
         items=[to_issue_read(issue) for issue in response],
-        pagination=Pagination(limit=limit, next_cursor=str(response[-1].id) if len(response) == limit else None),
+        pagination=Pagination(
+            limit=limit,
+            next_cursor=str(response[-1].id) if len(response) == limit else None,
+        ),
     )
+
 
 def get_issue(session: Session, issue_id: UUID) -> IssueRead | None:
     issue = session.get(Issue, issue_id)
     if not issue:
         return None
     return to_issue_read(issue)
+
 
 def create_issue(session: Session, project_id: UUID, data: IssueCreate) -> IssueRead:
     labels = _fetch_by_ids(session, Label, data.label_ids)
@@ -85,13 +99,22 @@ def create_issue(session: Session, project_id: UUID, data: IssueCreate) -> Issue
     session.refresh(issue)
     return to_issue_read(issue)
 
-def update_issue(session: Session, issue_id: UUID, data: IssueUpdate) -> IssueRead | None:
+
+def update_issue(
+    session: Session, issue_id: UUID, data: IssueUpdate
+) -> IssueRead | None:
     issue = session.get(Issue, issue_id)
     if not issue:
         return None
 
-    if data.status is not None and data.status != issue.status and data.status not in ALLOWED_TRANSITIONS[issue.status]:
-        raise InvalidStatusTransitionError(f"Invalid status transition from '{issue.status}' to '{data.status}'")
+    if (
+        data.status is not None
+        and data.status != issue.status
+        and data.status not in ALLOWED_TRANSITIONS[issue.status]
+    ):
+        raise InvalidStatusTransitionError(
+            f"Invalid status transition from '{issue.status}' to '{data.status}'"
+        )
 
     if data.label_ids is not None:
         labels = _fetch_by_ids(session, Label, data.label_ids)
@@ -107,7 +130,9 @@ def update_issue(session: Session, issue_id: UUID, data: IssueUpdate) -> IssueRe
             raise AssigneeNotFoundError(f"Assignees not found: {_join(missing_users)}")
         issue.assignees = users
 
-    for key, value in data.model_dump(exclude_unset=True, exclude={"label_ids", "assignee_ids"}).items():
+    for key, value in data.model_dump(
+        exclude_unset=True, exclude={"label_ids", "assignee_ids"}
+    ).items():
         setattr(issue, key, value)
 
     issue.updated_at = datetime.now(UTC)
@@ -115,6 +140,7 @@ def update_issue(session: Session, issue_id: UUID, data: IssueUpdate) -> IssueRe
     session.commit()
     session.refresh(issue)
     return to_issue_read(issue)
+
 
 def assign_user_to_issue(session: Session, issue_id: UUID, user_id: UUID) -> bool:
     issue = session.get(Issue, issue_id)
@@ -132,6 +158,7 @@ def assign_user_to_issue(session: Session, issue_id: UUID, user_id: UUID) -> boo
     session.commit()
     return True
 
+
 def remove_user_from_issue(session: Session, issue_id: UUID, user_id: UUID) -> bool:
     issue = session.get(Issue, issue_id)
     if not issue:
@@ -148,10 +175,12 @@ def remove_user_from_issue(session: Session, issue_id: UUID, user_id: UUID) -> b
     session.commit()
     return True
 
+
 def _fetch_by_ids(session: Session, model, ids: list[UUID]) -> list:
     if not ids:
         return []
     return list(session.exec(select(model).where(model.id.in_(ids))).all())
+
 
 def _join(ids: set[UUID]) -> str:
     return ", ".join(sorted(str(i) for i in ids))

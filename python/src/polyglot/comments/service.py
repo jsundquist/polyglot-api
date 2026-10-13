@@ -1,4 +1,3 @@
-
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -12,15 +11,15 @@ from polyglot.issues.service import get_issue
 from polyglot.users.models import User
 
 
-def get_comments(session: Session, issue_id: UUID, limit: int, cursor: UUID | None = None) -> Page[CommentRead] | None:
+def get_comments(
+    session: Session, issue_id: UUID, limit: int, cursor: UUID | None = None
+) -> Page[CommentRead] | None:
     issue = get_issue(session, issue_id)
     if not issue:
         return None
 
     stmt = (
-        select(Comment)
-        .where(Comment.issue_id == issue_id)
-        .order_by(Comment.id)  # type: ignore
+        select(Comment).where(Comment.issue_id == issue_id).order_by(Comment.id)  # type: ignore
     )
 
     if cursor:
@@ -30,10 +29,16 @@ def get_comments(session: Session, issue_id: UUID, limit: int, cursor: UUID | No
 
     return Page(
         items=[CommentRead.model_validate(comment) for comment in response],
-        pagination=Pagination(limit=limit, next_cursor=str(response[-1].id) if len(response) == limit else None),
+        pagination=Pagination(
+            limit=limit,
+            next_cursor=str(response[-1].id) if len(response) == limit else None,
+        ),
     )
 
-def create_comment(session: Session, issue_id: UUID, data: CommentCreate) -> Comment | None:
+
+def create_comment(
+    session: Session, issue_id: UUID, data: CommentCreate
+) -> Comment | None:
     issue = get_issue(session, issue_id)
     if not issue:
         return None
@@ -41,13 +46,18 @@ def create_comment(session: Session, issue_id: UUID, data: CommentCreate) -> Com
     if not session.get(User, data.author_id):
         raise AssigneeNotFoundError(f"Author not found: {data.author_id}")
 
-    comment = Comment.model_validate({"issue_id": issue_id, "body": data.body, "author_id": data.author_id})
+    comment = Comment.model_validate(
+        {"issue_id": issue_id, "body": data.body, "author_id": data.author_id}
+    )
     session.add(comment)
     session.commit()
     session.refresh(comment)
     return comment
 
-def update_comment(session: Session, comment_id: UUID, data: CommentUpdate) -> Comment | None:
+
+def update_comment(
+    session: Session, comment_id: UUID, data: CommentUpdate
+) -> Comment | None:
     comment = session.get(Comment, comment_id)
     if not comment:
         return None
@@ -58,6 +68,7 @@ def update_comment(session: Session, comment_id: UUID, data: CommentUpdate) -> C
     session.commit()
     session.refresh(comment)
     return comment
+
 
 def delete_comment(session: Session, comment_id: UUID) -> bool:
     comment = session.get(Comment, comment_id)

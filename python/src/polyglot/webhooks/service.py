@@ -15,10 +15,14 @@ def list_webhooks(session: Session, project_id: UUID) -> list[WebhookSubscriptio
     )
     return list(session.exec(stmt).all())
 
+
 def get_webhook(session: Session, webhook_id: UUID) -> WebhookSubscription | None:
     return session.get(WebhookSubscription, webhook_id)
 
-def create_webhook(session: Session, project_id: UUID, data: WebhookCreate) -> WebhookSubscription:
+
+def create_webhook(
+    session: Session, project_id: UUID, data: WebhookCreate
+) -> WebhookSubscription:
     webhook = WebhookSubscription(
         project_id=project_id,
         url=str(data.url),
@@ -30,6 +34,7 @@ def create_webhook(session: Session, project_id: UUID, data: WebhookCreate) -> W
     session.commit()
     session.refresh(webhook)
     return webhook
+
 
 def delete_webhook(session: Session, webhook_id: UUID) -> bool:
     webhook = get_webhook(session, webhook_id)
