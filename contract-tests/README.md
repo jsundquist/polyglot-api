@@ -35,7 +35,7 @@ the suite talks to anything other than the HTTP API.
 
 ## Prerequisites
 
-`run.sh` only sets up the Python side (venv + pytest) - it does **not** start
+`run.sh` only sets up the Python side - it does **not** start
 the implementation under test. It's HTTP-only and implementation-agnostic on
 purpose, so it can't know how to boot a NestJS app vs. a future Python/Go
 one. Before running it, the target implementation must already be up:

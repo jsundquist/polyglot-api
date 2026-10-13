@@ -38,7 +38,7 @@ updates:
       python-minor-patch:
         update-types: [minor, patch]
 
-  - package-ecosystem: pip
+  - package-ecosystem: uv
     directory: /contract-tests
     schedule:
       interval: weekly
