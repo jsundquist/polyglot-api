@@ -3,9 +3,9 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, create_engine
 
-DATABASE_URL = "postgresql+psycopg://polyglot:polyglot@localhost:5432/polyglot_api"
+from os import environ
 
-engine = create_engine(DATABASE_URL, echo=True)
+engine = create_engine(environ.get("DATABASE_URL", ""), echo=True)
 
 def get_session():
     with Session(engine) as session:
