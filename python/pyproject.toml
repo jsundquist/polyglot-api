@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "fastapi[standard]>=0.142.2",
     "psycopg[binary]>=3.3.6",
-    "sqlmodel>=0.0.47",
+    "sqlmodel>=0.0.48",
 ]
 
 [project.scripts]
@@ -22,7 +22,7 @@ build-backend = "uv_build"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.16.10",
+    "ruff>=0.17.0",
 ]
 
 [tool.ruff.lint.flake8-bugbear]
