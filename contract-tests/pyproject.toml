@@ -6,5 +6,5 @@ dependencies = [
     "psycopg[binary]>=3.3.6",
     "pytest<9",
     "requests>=2.34.2",
-    "schemathesis<4",
+    "schemathesis<5",
 ]
